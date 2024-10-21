@@ -34,3 +34,5 @@ pacstall-check-update.py --systemd-service enable --notify-icon utilities-x-term
 ```
 
 ^ Enables systemd service, and notifications sent by it will use `utilities-x-terminal` icon.
+
+![Notification screenshot](notification.png)
