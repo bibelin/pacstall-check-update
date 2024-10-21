@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, urllib.request, json, subprocess, os, re
+import argparse, urllib.request, json, subprocess, os, re, webbrowser
 from typing import List, Tuple, Any
 
 BOLD='\033[1m'
@@ -57,6 +57,7 @@ def get_version_color(search_text: str) -> str:
 def check_version(update: bool, non_zero: bool, notify: bool, notify_icon: str) -> int:
     data: List[Any] = get_github_release()
     new_version: str = data[0]['tag_name']
+    release_page: str = data[0]['html_url']
     new_color: str = get_version_color(data[0]['body'])
 
     pacstall_v: bytes = subprocess.check_output(['pacstall', '-V'])
@@ -65,7 +66,18 @@ def check_version(update: bool, non_zero: bool, notify: bool, notify_icon: str) 
     if current_version != new_version:
         print(f'{BOLD}Pacstall{NC} can be updated to version {new_color}{new_version}{NC}')
         if notify:
-            subprocess.run(['notify-send', '-i', notify_icon, 'Pacstall update available', f'New version: {new_version}'])
+            cmd: List[str] = ['notify-send']
+            ns_v: bytes = subprocess.check_output(['notify-send', '-v'])
+            ns_vl: List[str] = ns_v.decode('utf-8').split(' ')[1].split('.')
+            ns_vt: Tuple[int, ...] = tuple(int(n) for n in ns_vl)
+            # -A/--action option was added in v0.7.10 of libnotify
+            if ns_vt[0] > 0 or ns_vt[1] > 7 or (ns_vt[1] == 7 and ns_vt[2] >= 10):
+                cmd.extend(['-A', 'open=Open Release Page'])
+            cmd.extend(['-i', notify_icon, 'Pacstall update available', f'New version: {new_version}'])
+
+            notification: bytes = subprocess.check_output(cmd)
+            if notification.decode('utf-8').strip() == 'open':
+                webbrowser.open_new_tab(release_page)
         if update:
             print('Executing "pacstall -U"...')
             subprocess.run(['pacstall', '-U', 'pacstall', 'master'])
