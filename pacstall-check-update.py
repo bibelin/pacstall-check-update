@@ -2,6 +2,9 @@
 import argparse, urllib.request, json, subprocess, os, re
 from typing import List, Tuple, Any
 
+BOLD='\033[1m'
+NC='\033[0m'
+
 def run_parser() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='A script to check for the Pacstall update. When started without arguments or with "-u", "-1" or "-n", it checks for an update and executes an action defined by said flags.',
@@ -31,26 +34,36 @@ def run_parser() -> argparse.Namespace:
     )
     return parser.parse_args()
 
-def check_version(update: bool, non_zero: bool, notify: bool, notify_icon: str) -> int:
-    new_version: str = ''
-    new_color: str = '\033[1m'
+def get_github_release() -> List[Any]:
+    data: List[Any]
     with urllib.request.urlopen('https://api.github.com/repos/pacstall/pacstall/releases?page=1&per_page=1') as url:
-        data: List[Any] = json.load(url)
-        new_version = data[0]['tag_name']
+        data = json.load(url)
+    return data
+
+def get_version_color(search_text: str) -> str:
+    try:
         match: re.Match[str] | None = re.search(
             'https://www.htmlcsscolor.com/preview/128x128/(.+).png',
-            data[0]['body']
+            search_text
         )
         if match:
             hex: str = match.group(1)
             rgb: Tuple[str, ...] = tuple(str(int(hex[i:i+2], 16)) for i in (0, 2, 4))
-            new_color = f'\033[1m\x1b[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m'
+            return f'{BOLD}\x1b[38;2;{rgb[0]};{rgb[1]};{rgb[2]}m'
+        return BOLD
+    except:
+        return BOLD
+
+def check_version(update: bool, non_zero: bool, notify: bool, notify_icon: str) -> int:
+    data: List[Any] = get_github_release()
+    new_version: str = data[0]['tag_name']
+    new_color: str = get_version_color(data[0]['body'])
 
     pacstall_v: bytes = subprocess.check_output(['pacstall', '-V'])
     current_version: str = pacstall_v.decode('utf-8').split()[0]
 
     if current_version != new_version:
-        print(f'\033[1mPacstall\033[0m can be updated to version {new_color}{new_version}\033[0m')
+        print(f'{BOLD}Pacstall{NC} can be updated to version {new_color}{new_version}{NC}')
         if notify:
             subprocess.run(['notify-send', '-i', notify_icon, 'Pacstall update available', f'New version: {new_version}'])
         if update:
