@@ -22,7 +22,7 @@ def run_parser() -> argparse.Namespace:
     parser.add_argument(
         '--notify-icon', type=str,
         help='icon to use in notifications (only usable for "-n" and "--systemd-service=enable")',
-        default='update-notifier', nargs=1, metavar='ICON_NAME'
+        default='update-notifier', metavar='ICON_NAME'
     )
     parser.add_argument(
         '--systemd-service',
